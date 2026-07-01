@@ -62,7 +62,7 @@
   @media (prefers-reduced-motion: reduce){
     .pin::after{ animation:none; }
   }
-  .pin:hover svg, .pin:focus-visible svg{ transform:scale(1.15); transform-origin:center; transition:transform .15s ease; }
+  .pin:hover, .pin:focus-visible{ z-index:20; }
   .pin:focus-visible{ outline:2px solid var(--brass); outline-offset:3px; border-radius:50%; }
 
   /* ---------- HOVER TOOLTIP ---------- */
@@ -123,20 +123,18 @@
     max-height:85vh;
     filter:drop-shadow(0 10px 40px rgba(0,0,0,.5));
   }
-  .lightbox-close{
-    position:absolute;
-    top:-14px; right:-14px;
-    width:34px; height:34px;
-    border-radius:50%;
-    border:none;
-    background:var(--paper);
-    color:var(--ink);
-    font-size:18px;
-    line-height:1;
-    cursor:pointer;
-    box-shadow:0 2px 8px rgba(0,0,0,.4);
-  }
-  .lightbox-close:hover{ background:#fff; }
+ .lightbox-close{
+  position:absolute;
+  top:-38px; right:0;
+  width:34px; height:34px;
+  border:none;
+  background:none;
+  color:#ffeecc;
+  font-size:26px;
+  line-height:1;
+  cursor:pointer;
+}
+.lightbox-close:hover{ color:#fff; transform:scale(1.15); }
 </style>
 </head>
 <body>
@@ -167,9 +165,11 @@
    clickImg = big image shown in the popup on click
    ================================================== */
 const pins = [
-  { name:"Location One",   x:22, y:35, hoverImg:"hover-1.png", clickImg:"popup-1.png" },
-  { name:"Location Two",   x:48, y:58, hoverImg:"hover-2.png", clickImg:"popup-2.png" },
-  { name:"Location Three", x:74, y:28, hoverImg:"hover-3.png", clickImg:"popup-3.png" },
+  { name:"Location One",   x:76.5, y:72.1, hoverImg:"hover-1.png", clickImg:"popup-1.png" },
+  { name:"Location Two",   x:69.3, y:49.3, hoverImg:"hover-2.png", clickImg:"popup-2.png" },
+  { name:"Location Three", x:84.4, y:66.0, hoverImg:"hover-3.png", clickImg:"popup-3.png" },
+  { name:"Location Four", x:73.5, y:67.3, hoverImg:"hover-4.png", clickImg:"popup-4.png" },
+  { name:"Location Five", x:66.5, y:52.7, hoverImg:"hover-5.png", clickImg:"popup-5.png" },
 ];
 
 /* ---------- no need to edit below ---------- */
