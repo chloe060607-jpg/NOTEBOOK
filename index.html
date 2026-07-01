@@ -215,6 +215,12 @@ function closeLightbox(){
 lbClose.addEventListener('click', closeLightbox);
 lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+/* preload all pin images in the background so popups open instantly */
+window.addEventListener('load', () => {
+  pins.forEach(p => {
+    [p.hoverImg, p.clickImg].forEach(src => { const im = new Image(); im.src = src; });
+  });
+});
 
 /* ==================================================
    COORDINATE HELPER
