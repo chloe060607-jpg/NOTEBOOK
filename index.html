@@ -138,6 +138,20 @@
   cursor:pointer;
 }
 .lightbox-close:hover{ color:#fff; transform:scale(1.15); }
+.lightbox-btn{
+  display:block;
+  width:fit-content;
+  margin:14px auto 0;
+  padding:10px 22px;
+  background:#400D02;
+  color:#ffeecc;
+  font-family:Georgia, serif;
+  font-size:15px;
+  text-decoration:none;
+  border:1px solid #ffeecc;
+  border-radius:2px;
+}
+.lightbox-btn:hover{ background:#ffeecc; color:#400D02; }
 </style>
 </head>
 <body>
@@ -154,6 +168,7 @@
   <div class="lightbox-inner">
     <button class="lightbox-close" id="lightboxClose" aria-label="Close">✕</button>
     <img id="lightboxImg" src="" alt="">
+    <a id="lightboxLink" href="" target="_blank" rel="noopener" class="lightbox-btn">Watch it get made</a>
   </div>
 </div>
 
@@ -168,10 +183,10 @@
    clickImg = big image shown in the popup on click
    ================================================== */
 const pins = [
-  { name:"Location One",   x:76.5, y:72.1, hoverImg:"hover-1.png", clickImg:"popup-1.png" },
-  { name:"Location Two",   x:69.3, y:49.3, hoverImg:"hover-2.png", clickImg:"popup-2.png" },
-  { name:"Location Three", x:84.4, y:66.0, hoverImg:"hover-3.png", clickImg:"popup-3.png" },
-  { name:"Location Four", x:73.5, y:67.3, hoverImg:"hover-4.png", clickImg:"popup-4.png" },
+  { name:"Location One",   x:76.5, y:72.1, hoverImg:"hover-1.png", clickImg:"popup-1.png", link:"https://www.instagram.com/reel/DZ2vrFmAPwc/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
+  { name:"Location Two",   x:69.3, y:49.3, hoverImg:"hover-2.png", clickImg:"popup-2.png", link:"https://www.instagram.com/reel/DaDw_qRgAr1/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
+  { name:"Location Three", x:84.4, y:66.0, hoverImg:"hover-3.png", clickImg:"popup-3.png", link:"https://www.instagram.com/reel/DY5XJybAlo7/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
+  { name:"Location Four", x:73.5, y:67.3, hoverImg:"hover-4.png", clickImg:"popup-4.png", link:"https://www.instagram.com/reel/DZf4RGAtq9F/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
   { name:"Location Five", x:66.5, y:52.7, hoverImg:"hover-5.png", clickImg:"popup-5.png" },
 ];
 
@@ -199,11 +214,14 @@ pins.forEach(p => {
   btn.innerHTML = pinSVG + `
     <span class="tooltip"><img src="${p.hoverImg}" alt="${p.name}" loading="lazy"></span>`;
 
-  btn.addEventListener('click', () => {
-    lbImg.src = p.clickImg;
-    lbImg.alt = p.name;
-    lightbox.classList.add('open');
-  });
+btn.addEventListener('click', () => {
+  lbImg.src = p.clickImg;
+  lbImg.alt = p.name;
+  const lbLink = document.getElementById('lightboxLink');
+  if (p.link) { lbLink.href = p.link; lbLink.style.display = 'block'; }
+  else { lbLink.style.display = 'none'; }
+  lightbox.classList.add('open');
+});
 
   mapWrap.appendChild(btn);
 });
