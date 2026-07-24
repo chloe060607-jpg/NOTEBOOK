@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Map</title>
+<style>
+  :root{
+    --ink:#3a2f22;
+    --brass:#8a6d3b;
+    --wax:#7a2e2e;
+    --paper:#efe6d3;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ background:transparent; font-family:Georgia, 'Times New Roman', serif; }
+
+  /* ---------- MAP ---------- */
+  .map-wrap{
+    position:relative;
+    width:100%;
+    max-width:1100px;
+    margin:0 auto;
+  }
+  .map-wrap img.map-bg{
+    display:block;
+    width:100%;
+    height:auto;
+    user-select:none;
+    -webkit-user-drag:none;
+  }
+
+  /* ---------- PINS ---------- */
+  .pin{
+    position:absolute;
+    transform:translate(-50%, -50%);
+    width:26px;
+    height:26px;
+    cursor:pointer;
+    background:none;
+    border:none;
+    padding:0;
+    z-index:2;
+  }
+@media (max-width: 600px){
+  .pin{ width:16px; height:16px; }
+}
+  .pin svg{ width:100%; height:100%; display:block; filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+  .pin::after{           /* subtle pulse ring */
+    content:'';
+    position:absolute;
+    left:50%; top:50%;
+    width:10px; height:10px;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    border:2px solid #400D02;
+    opacity:0;
+    animation:pulse 2.4s ease-out infinite;
+  }
+  @keyframes pulse{
+    0%{ opacity:.7; width:8px; height:8px; }
+    70%{ opacity:0; width:30px; height:30px; }
+    100%{ opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .pin::after{ animation:none; }
+  }
+  .pin:hover, .pin:focus-visible{ z-index:20; }
+  .pin:focus-visible{ outline:2px solid var(--brass); outline-offset:3px; border-radius:50%; }
+
+  /* ---------- HOVER TOOLTIP ---------- */
+  .tooltip{
+    position:absolute;
+    bottom:calc(100% + 8px);
+    left:50%;
+    transform:translateX(-50%) translateY(6px);
+    width:180px;                 /* adjust tooltip image width here */
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .18s ease, transform .18s ease;
+    z-index:3;
+  }
+  .tooltip img{
+    display:block;
+    width:100%;
+    height:auto;
+    filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));
+  }
+  .pin:hover .tooltip,
+  .pin:focus-visible .tooltip{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+  /* tooltips near the left/right edge stay on-map */
+  .pin.edge-left .tooltip{ left:0; transform:translateX(0) translateY(6px); }
+  .pin.edge-left:hover .tooltip{ transform:translateX(0) translateY(0); }
+  .pin.edge-right .tooltip{ left:auto; right:0; transform:translateX(0) translateY(6px); }
+  .pin.edge-right:hover .tooltip{ transform:translateX(0) translateY(0); }
+
+  /* ---------- CLICK LIGHTBOX ---------- */
+  .lightbox{
+    position:fixed;
+    inset:0;
+    background:rgba(20,15,8,.82);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity .25s ease;
+    z-index:100;
+  }
+  .lightbox.open{ opacity:1; visibility:visible; }
+  .lightbox-inner{
+    position:relative;
+    max-width:min(90vw, 800px);
+    max-height:90vh;
+    transform:scale(.96);
+    transition:transform .25s ease;
+  }
+  .lightbox.open .lightbox-inner{ transform:scale(1); }
+  .lightbox-inner img{
+    display:block;
+    max-width:100%;
+    max-height:85vh;
+    filter:drop-shadow(0 10px 40px rgba(0,0,0,.5));
+  }
+ .lightbox-close{
+  position:absolute;
+  top:-38px; right:0;
+  width:34px; height:34px;
+  border:none;
+  background:none;
+  color:#ffeecc;
+  font-size:26px;
+  line-height:1;
+  cursor:pointer;
+}
+.lightbox-close:hover{ color:#fff; transform:scale(1.15); }
+.lightbox-btn{
+  display:block;
+  width:fit-content;
+  margin:14px auto 0;
+  padding:10px 22px;
+  background:#400D02;
+  color:#ffeecc;
+  font-family:Georgia, serif;
+  font-size:15px;
+  text-decoration:none;
+  border:1px solid #ffeecc;
+  border-radius:2px;
+}
+.lightbox-btn:hover{ background:#ffeecc; color:#400D02; }
+</style>
+</head>
+<body>
+
+<div class="map-wrap" id="mapWrap">
+  <!-- ==============================================
+       1. REPLACE THIS with your old map image
+       ============================================== -->
+  <img class="map-bg" src="map-background.jpg" alt="Map">
+</div>
+
+<!-- Lightbox (one shared popup, image swaps per pin) -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" id="lightboxClose" aria-label="Close">✕</button>
+    <img id="lightboxImg" src="" alt="">
+    <a id="lightboxLink" href="" target="_blank" rel="noopener" class="lightbox-btn">Watch it get made</a>
+  </div>
+</div>
+
+<script>
+/* ==================================================
+   2. YOUR PINS — add as many as you like.
+   x and y are percentages across the map image
+   (x: 0 = left edge, 100 = right edge
+    y: 0 = top edge, 100 = bottom edge)
+
+   hoverImg = small image shown above pin on hover
+   clickImg = big image shown in the popup on click
+   ================================================== */
+const pins = [
+  { name:"Location One",   x:76.5, y:72.1, hoverImg:"hover-1.png", clickImg:"popup-1.png", link:"https://www.instagram.com/reel/DZ2vrFmAPwc/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
+  { name:"Location Two",   x:69.3, y:49.3, hoverImg:"hover-2.png", clickImg:"popup-2.png", link:"https://www.instagram.com/reel/DaDw_qRgAr1/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
+  { name:"Location Three", x:84.4, y:66.0, hoverImg:"hover-3.png", clickImg:"popup-3.png", link:"https://www.instagram.com/reel/DY5XJybAlo7/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
+  { name:"Location Four",  x:73.5, y:67.3, hoverImg:"hover-4.png", clickImg:"popup-4.png", link:"https://www.instagram.com/reel/DZf4RGAtq9F/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
+  { name:"Location Five",  x:66.5, y:52.7, hoverImg:"hover-5.png", clickImg:"popup-5.png", link:"https://www.instagram.com/reel/DaV0QFKglnE/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
+  { name:"Location Six",   x:76.0, y:67.3, hoverImg:"hover-6.png", clickImg:"popup-6.png" },
+  { name:"Location Seven", x:65.4, y:51.2, hoverImg:"hover-7.png", clickImg:"popup-7.png", link:"https://www.instagram.com/reel/Da0n8L-g2jl/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==" },
+];
+
+/* ---------- no need to edit below ---------- */
+const mapWrap  = document.getElementById('mapWrap');
+const lightbox = document.getElementById('lightbox');
+const lbImg    = document.getElementById('lightboxImg');
+const lbClose  = document.getElementById('lightboxClose');
+
+const pinSVG = `
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 1.5 L14.9 8.9 L22.8 9.2 L16.6 14.2 L18.8 21.8 L12 17.4 L5.2 21.8 L7.4 14.2 L1.2 9.2 L9.1 8.9 Z"
+        fill="#400D02" stroke="#400D02" stroke-width="1" stroke-linejoin="round"/>
+</svg>`;
+
+pins.forEach(p => {
+  const btn = document.createElement('button');
+  btn.className = 'pin';
+  btn.style.left = p.x + '%';
+  btn.style.top  = p.y + '%';
+  btn.setAttribute('aria-label', p.name);
+  if (p.x < 12) btn.classList.add('edge-left');
+  if (p.x > 88) btn.classList.add('edge-right');
+
+  btn.innerHTML = pinSVG + `
+    <span class="tooltip"><img src="${p.hoverImg}" alt="${p.name}" loading="lazy"></span>`;
+
+btn.addEventListener('click', () => {
+  lbImg.src = p.clickImg;
+  lbImg.alt = p.name;
+  const lbLink = document.getElementById('lightboxLink');
+  if (p.link) { lbLink.href = p.link; lbLink.style.display = 'block'; }
+  else { lbLink.style.display = 'none'; }
+  lightbox.classList.add('open');
+});
+
+  mapWrap.appendChild(btn);
+});
+
+function closeLightbox(){
+  lightbox.classList.remove('open');
+  lbImg.src = '';
+}
+lbClose.addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+/* preload all pin images in the background so popups open instantly */
+window.addEventListener('load', () => {
+  pins.forEach(p => {
+    [p.hoverImg, p.clickImg].forEach(src => { const im = new Image(); im.src = src; });
+  });
+});
+
+/* ==================================================
+   COORDINATE HELPER
+   Add  #coords  to the end of the page's web address
+   and refresh — then click anywhere on the map and it
+   shows the x/y numbers AND copies a ready-made pin
+   line to your clipboard. Remove #coords to turn off.
+   ================================================== */
+if (window.location.hash === '#coords') {
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#3a2f22;color:#efe6d3;font:14px Georgia,serif;text-align:center;padding:8px;z-index:200;';
+  banner.textContent = 'Coordinate helper ON — click the map to get pin numbers';
+  document.body.appendChild(banner);
+
+  mapWrap.addEventListener('click', e => {
+    if (e.target.closest('.pin')) return; // ignore clicks on existing pins
+    const r = mapWrap.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width  * 100).toFixed(1);
+    const y = ((e.clientY - r.top)  / r.height * 100).toFixed(1);
+
+    const line = `{ name:"New Pin", x:${x}, y:${y}, hoverImg:"hover.png", clickImg:"popup.png" },`;
+    navigator.clipboard && navigator.clipboard.writeText(line);
+
+    // show a temporary marker + the numbers where you clicked
+    const dot = document.createElement('div');
+    dot.style.cssText = `position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%);z-index:50;pointer-events:none;`;
+    dot.innerHTML = `<div style="width:10px;height:10px;background:#7a2e2e;border:2px solid #efe6d3;border-radius:50%;margin:0 auto;"></div>
+      <div style="background:#3a2f22;color:#efe6d3;font:12px Georgia,serif;padding:3px 8px;border-radius:4px;white-space:nowrap;margin-top:4px;">x:${x} y:${y} — copied!</div>`;
+    mapWrap.appendChild(dot);
+    setTimeout(() => dot.remove(), 4000);
+  });
+}
+</script>
+
+</body>
+</html>
